@@ -124,6 +124,7 @@ open class MainActivity : ReactActivity() {
                 params.putString("sharedFileUrl", url.toString())
             }
         }
+        params.putString("mimeType", intent.type)
         return params
     }
 }

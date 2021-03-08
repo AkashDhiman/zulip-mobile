@@ -30,10 +30,16 @@ export const handleSend = async (data: SendStream | SendPm, auth: Auth, _: GetTe
   let messageToSend = data.message;
 
   showToast(_('Sending Message...'));
-
   if (sharedData.type === 'image' || sharedData.type === 'file') {
-    const url = sharedData.type === 'image' ? sharedData.sharedImageUrl : sharedData.sharedFileUrl;
-    const fileName = url.split('/').pop();
+    let fileName;
+    let url;
+    if (sharedData.type === 'image') {
+      url = sharedData.sharedImageUrl;
+      fileName = `image.${sharedData.mimeType.split('/').pop()}`;
+    } else {
+      url = sharedData.sharedFileUrl;
+      fileName = `file.${sharedData.mimeType.split('/').pop()}`;
+    }
     const response = await uploadFile(auth, url, fileName);
     messageToSend += `\n[${fileName}](${response.uri})`;
   }

@@ -336,16 +336,19 @@ export type PmConversationData = {|
 
 export type SharedText = {|
   type: 'text',
+  mimeType: string,
   sharedText: string,
 |};
 
 export type SharedImage = {|
   type: 'image',
+  mimeType: string,
   sharedImageUrl: string,
 |};
 
 export type SharedFile = {|
   type: 'file',
+  mimeType: string,
   sharedFileUrl: string,
 |};
 
