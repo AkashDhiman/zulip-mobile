@@ -1,7 +1,6 @@
 /* @flow strict-local */
 import React from 'react';
-import { View, Image, ScrollView, Modal, BackHandler } from 'react-native';
-
+import { View, Image, ScrollView, Modal } from 'react-native';
 import type { RouteProp } from '../react-navigation';
 import type { SharingNavigationProp } from './SharingScreen';
 import * as NavigationService from '../nav/NavigationService';
@@ -12,9 +11,12 @@ import { connect } from '../react-redux';
 import { ZulipButton, Input, Label } from '../common';
 import UserItem from '../users/UserItem';
 import { getAuth } from '../selectors';
-import { navigateBack } from '../nav/navActions';
+import { navigateBack, replaceWithChat } from '../nav/navActions';
 import ChooseRecipientsScreen from './ChooseRecipientsScreen';
 import { handleSend } from './send';
+import { pmNarrowFromRecipients } from '../utils/narrow';
+import { pmKeyRecipientsFromIds } from '../utils/recipient';
+import { getOwnUserId } from '../users/userSelectors';
 
 const styles = createStyleSheet({
   wrapper: {
@@ -58,7 +60,7 @@ const styles = createStyleSheet({
 type Props = $ReadOnly<{|
   navigation: SharingNavigationProp<'share-to-pm'>,
   route: RouteProp<'share-to-pm', {| sharedData: SharedData |}>,
-
+  ownUserId: UserId,
   dispatch: Dispatch,
   auth: Auth,
 |}>;
@@ -105,13 +107,24 @@ class ShareToPm extends React.Component<Props, State> {
     const data = { selectedRecipients, message, sharedData, type: 'pm' };
 
     this.setSending();
-    await handleSend(data, auth, _);
-    this.finishShare();
+    try {
+      await handleSend(data, auth, _);
+      this.shareSuccess();
+    } catch (err) {
+      this.finishShare();
+    }
+  };
+
+  shareSuccess = () => {
+    const { selectedRecipients } = this.state;
+    const { ownUserId } = this.props;
+    const recipients = pmKeyRecipientsFromIds(selectedRecipients, ownUserId);
+    const narrow = pmNarrowFromRecipients(recipients);
+    NavigationService.dispatch(replaceWithChat(narrow));
   };
 
   finishShare = () => {
     NavigationService.dispatch(navigateBack());
-    BackHandler.exitApp();
   };
 
   handleMessageChange = message => {
@@ -195,4 +208,5 @@ class ShareToPm extends React.Component<Props, State> {
 
 export default connect(state => ({
   auth: getAuth(state),
+  ownUserId: getOwnUserId(state),
 }))(ShareToPm);

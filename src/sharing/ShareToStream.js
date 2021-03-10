@@ -1,7 +1,6 @@
 /* @flow strict-local */
 import React from 'react';
-import { View, Image, ScrollView, BackHandler } from 'react-native';
-
+import { View, Image, ScrollView } from 'react-native';
 import type { SharingNavigationProp } from './SharingScreen';
 import type { RouteProp } from '../react-navigation';
 import * as NavigationService from '../nav/NavigationService';
@@ -16,7 +15,7 @@ import TopicAutocomplete from '../autocomplete/TopicAutocomplete';
 import AnimatedScaleComponent from '../animation/AnimatedScaleComponent';
 import { streamNarrow } from '../utils/narrow';
 import { getAuth } from '../selectors';
-import { navigateBack } from '../nav/navActions';
+import { navigateBack, replaceWithChat } from '../nav/navActions';
 import { fetchTopicsForStream } from '../topics/topicActions';
 import { handleSend } from './send';
 
@@ -128,13 +127,22 @@ class ShareToStream extends React.Component<Props, State> {
     const data = { stream, topic, message, sharedData, type: 'stream' };
 
     this.setSending();
-    await handleSend(data, auth, _);
-    this.finishShare();
+    try {
+      await handleSend(data, auth, _);
+      this.shareSuccess();
+    } catch (err) {
+      this.finishShare();
+    }
+  };
+
+  shareSuccess = () => {
+    const { stream } = this.state;
+    const narrow = streamNarrow(stream);
+    NavigationService.dispatch(replaceWithChat(narrow));
   };
 
   finishShare = () => {
     NavigationService.dispatch(navigateBack());
-    BackHandler.exitApp();
   };
 
   isSendButtonEnabled = () => {

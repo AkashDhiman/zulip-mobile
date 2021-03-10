@@ -60,9 +60,9 @@ export const handleSend = async (data: SendStream | SendPm, auth: Auth, _: GetTe
 
   try {
     await sendMessage(auth, messageData);
+    showToast(_('Message sent'));
   } catch (err) {
     showToast(_('Failed to send message'));
-    return;
+    throw new Error(err);
   }
-  showToast(_('Message sent'));
 };

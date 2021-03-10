@@ -29,6 +29,9 @@ export const resetToMainTabs = (): GenericNavigationAction =>
 export const navigateToChat = (narrow: Narrow): GenericNavigationAction =>
   StackActions.push('chat', { narrow });
 
+export const replaceWithChat = (narrow: Narrow): GenericNavigationAction =>
+  StackActions.replace('chat', { narrow });
+
 export const navigateToUsersScreen = (): GenericNavigationAction => StackActions.push('users');
 
 export const navigateToSearch = (): GenericNavigationAction => StackActions.push('search-messages');
