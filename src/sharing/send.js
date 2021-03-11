@@ -28,21 +28,18 @@ type SendPm = {|
 export const handleSend = async (data: SendStream | SendPm, auth: Auth, _: GetText) => {
   const sharedData = data.sharedData;
   let messageToSend = data.message;
+  if (!sharedData.isText) {
+    const { content } = sharedData;
+    for (let i = 0; i < content.length; i++) {
+      const name = `shared-content-${i + 1}`;
+      const ext = content[i].type.split('/').pop();
+      const fileName = `${name}.${ext}`;
+      const response = await uploadFile(auth, content[i].url, fileName);
+      messageToSend += `\n[${fileName}](${response.uri})`;
+    }
+  }
 
   showToast(_('Sending Message...'));
-  if (sharedData.type === 'image' || sharedData.type === 'file') {
-    let fileName;
-    let url;
-    if (sharedData.type === 'image') {
-      url = sharedData.sharedImageUrl;
-      fileName = `image.${sharedData.mimeType.split('/').pop()}`;
-    } else {
-      url = sharedData.sharedFileUrl;
-      fileName = `file.${sharedData.mimeType.split('/').pop()}`;
-    }
-    const response = await uploadFile(auth, url, fileName);
-    messageToSend += `\n[${fileName}](${response.uri})`;
-  }
 
   const messageData =
     data.type === 'pm'

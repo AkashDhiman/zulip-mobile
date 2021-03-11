@@ -334,25 +334,22 @@ export type PmConversationData = {|
   unread: number,
 |};
 
+export type Content = {|
+  url: string,
+  type: string,
+|};
+
 export type SharedText = {|
-  type: 'text',
-  mimeType: string,
+  isText: true,
   sharedText: string,
 |};
 
-export type SharedImage = {|
-  type: 'image',
-  mimeType: string,
-  sharedImageUrl: string,
-|};
-
-export type SharedFile = {|
-  type: 'file',
-  mimeType: string,
-  sharedFileUrl: string,
+export type SharedContent = {|
+  isText: false,
+  content: Array<Content>,
 |};
 
 /**
  * The data we get when the user "shares" to Zulip from another app.
  */
-export type SharedData = SharedText | SharedImage | SharedFile;
+export type SharedData = SharedText | SharedContent;

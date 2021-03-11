@@ -1,16 +1,18 @@
 package com.zulipmobile
 
 import android.content.Intent
+import android.content.ClipData
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.webkit.WebView
+import android.webkit.WebView   
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.ReactRootView;
 import com.facebook.react.ReactApplication
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.ReadableArray
 import com.swmansion.gesturehandler.react.RNGestureHandlerEnabledRootView;
 import com.zulipmobile.notifications.*
 import com.zulipmobile.sharing.SharingModule
@@ -62,12 +64,12 @@ open class MainActivity : ReactActivity() {
     /* Returns true just if we did handle the intent. */
     private fun maybeHandleIntent(intent: Intent?): Boolean {
         // We handle intents from "sharing" something to Zulip.
-        if (intent?.action == Intent.ACTION_SEND) {
-            handleSend(intent)
-            return true
+        if (intent != null) {
+            if ((intent.action == Intent.ACTION_SEND) or (intent.action == Intent.ACTION_SEND_MULTIPLE)) {
+                handleSend(intent)
+                return true
+            }
         }
-        // TODO also handle ACTION_SEND_MULTIPLE?
-        //   See: https://developer.android.com/training/sharing/receive#receiving-data-activity
 
         // For other intents, let RN handle it.  In particular this is
         // important for VIEW intents with zulip: URLs.
@@ -105,26 +107,34 @@ open class MainActivity : ReactActivity() {
         // For documentation of what fields to expect here, see:
         //   https://developer.android.com/reference/android/content/Intent#ACTION_SEND
         val params = Arguments.createMap()
-        when {
-            "text/plain" == intent.type -> {
-                val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-                params.putString("type", "text")
-                params.putString("sharedText", sharedText)
+        
+        if ("text/plain" == intent.type) {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            params.putBoolean("isText", true)
+            params.putString("sharedText", sharedText)
+        } else {
+            val content = Arguments.createArray();
+            val url = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            val urls = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+            val cr = this.contentResolver
+
+            if (url != null) {
+                val singleContent = Arguments.createMap()
+                singleContent.putString("url", url.toString())
+                singleContent.putString("type", cr.getType(url))
+                content.pushMap(singleContent)
+            } else if (urls != null) {
+                for (u in urls) {
+                    val singleContent = Arguments.createMap()
+                    singleContent.putString("url", u.toString())
+                    singleContent.putString("type", cr.getType(u))
+                    content.pushMap(singleContent)
+                }
             }
-            intent.type?.startsWith("image/") == true -> {
-                val url = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                    ?: throw ShareParamsParseException("Could not extract URL from Image Intent")
-                params.putString("type", "image")
-                params.putString("sharedImageUrl", url.toString())
-            }
-            else -> {
-                val url = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                    ?: throw ShareParamsParseException("Could not extract URL from File Intent")
-                params.putString("type", "file")
-                params.putString("sharedFileUrl", url.toString())
-            }
+
+            params.putBoolean("isText", false)
+            params.putArray("content", content)
         }
-        params.putString("mimeType", intent.type)
         return params
     }
 }

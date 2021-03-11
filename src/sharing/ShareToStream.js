@@ -1,6 +1,6 @@
 /* @flow strict-local */
 import React from 'react';
-import { View, Image, ScrollView } from 'react-native';
+import { View, Image, ScrollView, FlatList } from 'react-native';
 import type { SharingNavigationProp } from './SharingScreen';
 import type { RouteProp } from '../react-navigation';
 import * as NavigationService from '../nav/NavigationService';
@@ -149,12 +149,19 @@ class ShareToStream extends React.Component<Props, State> {
     const { stream, topic, message } = this.state;
     const { sharedData } = this.props.route.params;
 
-    if (sharedData.type !== 'text') {
+    if (!sharedData.isText) {
       return stream !== '' && topic !== '';
     }
 
     return stream !== '' && topic !== '' && message !== '';
   };
+
+  renderItem = ({ item, index, separators }) =>
+    item.type.startsWith('image') ? (
+      <Image source={{ uri: item.url }} style={styles.imagePreview} />
+    ) : (
+      <></>
+    );
 
   render() {
     const { sharedData } = this.props.route.params;
@@ -165,8 +172,15 @@ class ShareToStream extends React.Component<Props, State> {
       <>
         <ScrollView style={styles.wrapper} keyboardShouldPersistTaps="always" nestedScrollEnabled>
           <View style={styles.container}>
-            {sharedData.type === 'image' && (
-              <Image source={{ uri: sharedData.sharedImageUrl }} style={styles.imagePreview} />
+            {sharedData.isText ? (
+              <></>
+            ) : (
+              <FlatList
+                data={sharedData.content}
+                renderItem={this.renderItem}
+                keyExtractor={i => i.url}
+                horizontal
+              />
             )}
             <AnimatedScaleComponent visible={isStreamFocused}>
               <StreamAutocomplete filter={stream} onAutocomplete={this.handleStreamAutoComplete} />

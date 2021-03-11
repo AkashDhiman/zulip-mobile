@@ -1,6 +1,6 @@
 /* @flow strict-local */
 import React from 'react';
-import { View, Image, ScrollView, Modal } from 'react-native';
+import { View, Image, ScrollView, Modal, FlatList } from 'react-native';
 import type { RouteProp } from '../react-navigation';
 import type { SharingNavigationProp } from './SharingScreen';
 import * as NavigationService from '../nav/NavigationService';
@@ -80,7 +80,7 @@ class ShareToPm extends React.Component<Props, State> {
     const { sharedData } = this.props.route.params;
     return {
       selectedRecipients: [],
-      message: sharedData.type === 'text' ? sharedData.sharedText : '',
+      message: sharedData.isText ? sharedData.sharedText : '',
       choosingRecipients: false,
       sending: false,
     };
@@ -135,7 +135,7 @@ class ShareToPm extends React.Component<Props, State> {
     const { message, selectedRecipients } = this.state;
     const { sharedData } = this.props.route.params;
 
-    if (sharedData.type === 'text') {
+    if (sharedData.isText) {
       return message !== '' && selectedRecipients.length > 0;
     }
 
@@ -155,6 +155,13 @@ class ShareToPm extends React.Component<Props, State> {
     return preview;
   };
 
+  renderItem = ({ item, index, separators }) =>
+    item.type.startsWith('image') ? (
+      <Image source={{ uri: item.url }} style={styles.imagePreview} />
+    ) : (
+      <></>
+    );
+
   render() {
     const { message, choosingRecipients, sending } = this.state;
 
@@ -167,17 +174,22 @@ class ShareToPm extends React.Component<Props, State> {
     }
 
     const { sharedData } = this.props.route.params;
-    let sharePreview = null;
-    if (sharedData.type === 'image') {
-      sharePreview = (
-        <Image source={{ uri: sharedData.sharedImageUrl }} style={styles.imagePreview} />
-      );
-    }
 
     return (
       <>
         <ScrollView style={styles.wrapper} keyboardShouldPersistTaps="always">
-          <View style={styles.container}>{sharePreview}</View>
+          <View style={styles.container}>
+            {sharedData.isText ? (
+              <></>
+            ) : (
+              <FlatList
+                data={sharedData.content}
+                renderItem={this.renderItem}
+                keyExtractor={i => i.url}
+                horizontal
+              />
+            )}
+          </View>
           <View style={styles.usersPreview}>{this.renderUsersPreview()}</View>
           <ZulipButton
             onPress={() => this.setState({ choosingRecipients: true })}
